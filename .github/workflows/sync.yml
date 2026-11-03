@@ -1,0 +1,27 @@
+name: Sync from upstream
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rebuild marketplace.json from upstream
+        run: python3 scripts/build.py
+      - name: Commit if changed
+        run: |
+          if git diff --quiet; then
+            echo "No upstream change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Sync with upstream $(python3 -c 'import json;print(json.load(open(".claude-plugin/marketplace.json"))["plugins"][0]["source"]["sha"][:7])')"
+          git push
